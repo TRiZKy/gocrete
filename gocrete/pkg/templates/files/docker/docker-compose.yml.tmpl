@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ENVIRONMENT=production
+      - PORT=8080
+      - LOG_LEVEL=info
+      {{- if eq .Database "postgres"}}
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/{{.ProjectName}}?sslmode=disable
+      {{- else if eq .Database "mongo"}}
+      - MONGO_URL=mongodb://mongo:27017
+      - MONGO_DB={{.ProjectName}}
+      {{- end}}
+    {{- if ne .Database "none"}}
+    depends_on:
+      {{- if eq .Database "postgres"}}
+      - postgres
+      {{- else if eq .Database "mongo"}}
+      - mongo
+      {{- end}}
+    {{- end}}
+    restart: unless-stopped
+
+  {{- if eq .Database "postgres"}}
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB={{.ProjectName}}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  {{- else if eq .Database "mongo"}}
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  {{- end}}

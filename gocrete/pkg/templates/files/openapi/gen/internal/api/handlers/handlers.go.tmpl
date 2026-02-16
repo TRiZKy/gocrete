@@ -1,0 +1,29 @@
+package handlers
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"{{.ModulePath}}/internal/logger"
+)
+
+type Handlers struct {
+	logger *logger.Logger
+}
+
+func New(log *logger.Logger) *Handlers {
+	return &Handlers{
+		logger: log,
+	}
+}
+
+// Example handler - adjust based on your OpenAPI spec
+func (h *Handlers) GetUsers(w http.ResponseWriter, r *http.Request) {
+	users := []map[string]interface{}{
+		{"id": 1, "email": "user1@example.com"},
+		{"id": 2, "email": "user2@example.com"},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}

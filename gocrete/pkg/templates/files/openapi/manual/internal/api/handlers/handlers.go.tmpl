@@ -1,0 +1,78 @@
+package handlers
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"{{.ModulePath}}/internal/errors"
+	"{{.ModulePath}}/internal/logger"
+)
+
+type Handlers struct {
+	logger *logger.Logger
+}
+
+func New(log *logger.Logger) *Handlers {
+	return &Handlers{
+		logger: log,
+	}
+}
+
+// Example handlers
+func (h *Handlers) ListUsers(w http.ResponseWriter, r *http.Request) {
+	users := []map[string]interface{}{
+		{"id": 1, "email": "user1@example.com"},
+		{"id": 2, "email": "user2@example.com"},
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(users)
+}
+
+func (h *Handlers) GetUser(w http.ResponseWriter, r *http.Request) {
+	// Parse ID from URL or query params
+	user := map[string]interface{}{
+		"id":    1,
+		"email": "user@example.com",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(user)
+}
+
+func (h *Handlers) CreateUser(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email string `json:"email"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errors.BadRequest(w, "Invalid request body")
+		return
+	}
+
+	user := map[string]interface{}{
+		"id":    3,
+		"email": req.Email,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(user)
+}
+
+func (h *Handlers) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Email string `json:"email"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		errors.BadRequest(w, "Invalid request body")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *Handlers) DeleteUser(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNoContent)
+}

@@ -1,0 +1,60 @@
+package config
+
+import (
+	"fmt"
+	"os"
+	"strconv"
+)
+
+type Config struct {
+	Environment string
+	Port        int
+	LogLevel    string
+	{{- if eq .Database "postgres"}}
+	DatabaseURL string
+	{{- end}}
+	{{- if eq .Database "mongo"}}
+	MongoURL string
+	MongoDB  string
+	{{- end}}
+}
+
+func Load() (*Config, error) {
+	cfg := &Config{
+		Environment: getEnv("ENVIRONMENT", "development"),
+		Port:        getEnvInt("PORT", 8080),
+		LogLevel:    getEnv("LOG_LEVEL", "info"),
+		{{- if eq .Database "postgres"}}
+		DatabaseURL: getEnv("DATABASE_URL", "postgres://postgres:postgres@localhost:5432/{{.ProjectName}}?sslmode=disable"),
+		{{- end}}
+		{{- if eq .Database "mongo"}}
+		MongoURL: getEnv("MONGO_URL", "mongodb://localhost:27017"),
+		MongoDB:  getEnv("MONGO_DB", "{{.ProjectName}}"),
+		{{- end}}
+	}
+
+	return cfg, nil
+}
+
+func getEnv(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+func getEnvInt(key string, defaultValue int) int {
+	if value := os.Getenv(key); value != "" {
+		if intVal, err := strconv.Atoi(value); err == nil {
+			return intVal
+		}
+	}
+	return defaultValue
+}
+
+func (c *Config) Validate() error {
+	if c.Port < 1 || c.Port > 65535 {
+		return fmt.Errorf("invalid port: %d", c.Port)
+	}
+	return nil
+}

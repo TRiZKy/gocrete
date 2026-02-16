@@ -1,0 +1,100 @@
+package main
+
+import (
+	{{- if ne .Router "fiber"}}
+	"context"
+	{{- end}}
+	"fmt"
+	{{- if ne .Router "fiber"}}
+	"net/http"
+	{{- end}}
+	"os"
+	"os/signal"
+	"syscall"
+	{{- if ne .Router "fiber"}}
+	"time"
+	{{- end}}
+
+	"{{.ModulePath}}/internal/config"
+	"{{.ModulePath}}/internal/logger"
+	httpserver "{{.ModulePath}}/internal/http"
+)
+
+func main() {
+	// Load configuration
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to load config: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Initialize logger
+	log := logger.New(cfg.LogLevel)
+	log.Info("Starting server", "port", cfg.Port, "env", cfg.Environment)
+
+	// Create HTTP server
+	server := httpserver.NewServer(cfg, log)
+	
+	{{- if eq .Router "fiber"}}
+	// Fiber uses its own Listen method
+	// Start server in a goroutine
+	go func() {
+		addr := fmt.Sprintf(":%d", cfg.Port)
+		log.Info("Server listening", "addr", addr)
+		if err := server.Listen(addr); err != nil {
+			log.Error("Server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Info("Shutting down server...")
+
+	// Graceful shutdown for Fiber
+	if err := server.Shutdown(); err != nil {
+		log.Error("Server forced to shutdown", "error", err)
+		os.Exit(1)
+	}
+
+	log.Info("Server stopped")
+	{{- else}}
+	httpServer := &http.Server{
+		Addr:         fmt.Sprintf(":%d", cfg.Port),
+		Handler:      server.Router(),
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	// Start server in a goroutine
+	go func() {
+		log.Info("Server listening", "addr", httpServer.Addr)
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error("Server failed", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Wait for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Info("Shutting down server...")
+
+	// Graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := httpServer.Shutdown(ctx); err != nil {
+		log.Error("Server forced to shutdown", "error", err)
+		os.Exit(1)
+	}
+
+	log.Info("Server stopped")
+	{{- end}}
+}

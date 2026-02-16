@@ -1,0 +1,118 @@
+# {{.ProjectName}}
+
+Generated with Gocrete.
+
+## Getting Started
+
+### Prerequisites
+
+- Go 1.22 or higher
+{{- if eq .Database "postgres"}}
+- PostgreSQL
+{{- else if eq .Database "mongo"}}
+- MongoDB
+{{- end}}
+{{- if .HasDocker}}
+- Docker and Docker Compose
+{{- end}}
+
+### Running the Application
+
+{{- if .HasDocker}}
+
+Using Docker:
+
+```bash
+docker-compose up
+```
+
+{{- end}}
+
+Locally:
+
+```bash
+# Install dependencies
+go mod download
+
+{{- if eq .Database "postgres"}}
+# Set up database
+export DATABASE_URL="postgres://postgres:postgres@localhost:5432/{{.ProjectName}}?sslmode=disable"
+{{- else if eq .Database "mongo"}}
+# Set up MongoDB
+export MONGO_URL="mongodb://localhost:27017"
+export MONGO_DB="{{.ProjectName}}"
+{{- end}}
+
+# Run the server
+go run cmd/server/main.go
+```
+
+The server will start on port 8080 by default.
+
+### Environment Variables
+
+- `ENVIRONMENT` - Environment name (default: development)
+- `PORT` - Server port (default: 8080)
+- `LOG_LEVEL` - Log level (debug, info, warn, error) (default: info)
+{{- if eq .Database "postgres"}}
+- `DATABASE_URL` - PostgreSQL connection string
+{{- else if eq .Database "mongo"}}
+- `MONGO_URL` - MongoDB connection URL
+- `MONGO_DB` - MongoDB database name
+{{- end}}
+
+### API Endpoints
+
+- `GET /health` - Health check endpoint
+- `GET /ready` - Readiness check endpoint
+
+## Project Structure
+
+```
+.
+├── cmd/
+│   └── server/          # Application entrypoint
+├── internal/
+│   ├── config/          # Configuration management
+│   ├── logger/          # Structured logging
+│   ├── http/            # HTTP server and routing
+│   ├── errors/          # Error handling utilities
+{{- if ne .Database "none"}}
+│   └── db/              # Database layer
+{{- end}}
+{{- if ne .OpenAPI "none"}}
+├── api/                 # OpenAPI specifications
+{{- end}}
+{{- if eq .Migrations "goose"}}
+├── migrations/          # Database migrations
+{{- end}}
+└── go.mod
+```
+
+## Development
+
+### Testing
+
+```bash
+go test ./...
+```
+
+### Building
+
+```bash
+go build -o bin/server cmd/server/main.go
+```
+
+{{- if eq .OpenAPI "gen"}}
+
+### Generating API Code
+
+```bash
+make api-gen
+```
+
+{{- end}}
+
+## License
+
+MIT
