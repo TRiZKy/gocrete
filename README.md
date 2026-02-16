@@ -18,8 +18,7 @@ go run cmd/server/main.go
 
 ✅ **Chi** - Standard library, great middleware  
 ✅ **Gin** - High performance, large ecosystem  
-✅ **Fiber** - Maximum performance, Express-like (FIXED in v5)
-
+✅ **Fiber** - Maximum performance, Express-like
 ## All Features Work
 
 ✅ PostgreSQL & MongoDB  
