@@ -2,8 +2,6 @@
 
 **The fully working, production-grade Go CLI tool for scaffolding modular backend projects.**
 
-All issues fixed. All routers working. Ready to use.
-
 ## Quick Start
 
 ```bash
